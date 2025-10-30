@@ -25,6 +25,7 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddBook, setShowAddBook] = useState(false);
+  const [showAddStudent, setShowAddStudent] = useState(false);
   
   const [newBook, setNewBook] = useState({
     title: "",
@@ -34,6 +35,13 @@ const AdminDashboard = () => {
     summary: "",
     total_copies: "1",
     available_copies: "1",
+  });
+
+  const [newStudent, setNewStudent] = useState({
+    full_name: "",
+    email: "",
+    password: "",
+    class_level: "5",
   });
 
   useEffect(() => {
@@ -117,6 +125,37 @@ const AdminDashboard = () => {
         summary: "",
         total_copies: "1",
         available_copies: "1",
+      });
+      fetchData();
+    }
+  };
+
+  const handleAddStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const { error } = await supabase.auth.signUp({
+      email: newStudent.email,
+      password: newStudent.password,
+      options: {
+        data: {
+          full_name: newStudent.full_name,
+          role: "student",
+          class_level: parseInt(newStudent.class_level),
+        },
+        emailRedirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error adding student", description: error.message });
+    } else {
+      toast({ title: "Student added successfully!" });
+      setShowAddStudent(false);
+      setNewStudent({
+        full_name: "",
+        email: "",
+        password: "",
+        class_level: "5",
       });
       fetchData();
     }
@@ -337,7 +376,68 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="students" className="space-y-6">
-            <h2 className="text-xl font-semibold">Registered Students</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Registered Students</h2>
+              <Dialog open={showAddStudent} onOpenChange={setShowAddStudent}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Student
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Student</DialogTitle>
+                    <DialogDescription>Create a new student account</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddStudent} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="student-name">Full Name *</Label>
+                      <Input
+                        id="student-name"
+                        value={newStudent.full_name}
+                        onChange={(e) => setNewStudent({ ...newStudent, full_name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="student-email">Email *</Label>
+                      <Input
+                        id="student-email"
+                        type="email"
+                        value={newStudent.email}
+                        onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="student-password">Password *</Label>
+                      <Input
+                        id="student-password"
+                        type="password"
+                        value={newStudent.password}
+                        onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="student-class">Class Level *</Label>
+                      <Input
+                        id="student-class"
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={newStudent.class_level}
+                        onChange={(e) => setNewStudent({ ...newStudent, class_level: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full">Add Student</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {students.map((student) => (
                 <Card key={student.id}>
