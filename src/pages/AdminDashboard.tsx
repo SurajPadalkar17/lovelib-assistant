@@ -26,11 +26,18 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddBook, setShowAddBook] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [showIssueBook, setShowIssueBook] = useState(false);
   const [issueForm, setIssueForm] = useState({
     student_id: "",
     book_id: "",
     due_days: "14",
+  });
+  
+  const [newAdmin, setNewAdmin] = useState({
+    full_name: "",
+    email: "",
+    password: "",
   });
   
   const [newBook, setNewBook] = useState({
@@ -175,6 +182,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const { error } = await supabase.auth.signUp({
+      email: newAdmin.email,
+      password: newAdmin.password,
+      options: {
+        data: {
+          full_name: newAdmin.full_name,
+          role: "admin",
+        },
+        emailRedirectTo: `${window.location.origin}/`,
+      },
+    });
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error adding admin", description: error.message });
+    } else {
+      toast({ title: "Admin added successfully!" });
+      setShowAddAdmin(false);
+      setNewAdmin({
+        full_name: "",
+        email: "",
+        password: "",
+      });
+    }
+  };
+
   const handleIssueBook = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -286,11 +321,12 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="books" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="books">📚 Books</TabsTrigger>
             <TabsTrigger value="issue">📤 Issue Book</TabsTrigger>
             <TabsTrigger value="issued">📋 Issued Books</TabsTrigger>
             <TabsTrigger value="students">👥 Students</TabsTrigger>
+            <TabsTrigger value="admins">🔐 Admins</TabsTrigger>
           </TabsList>
 
           <TabsContent value="books" className="space-y-6">
@@ -570,6 +606,69 @@ const AdminDashboard = () => {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="admins" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Admin Users</h2>
+              <Dialog open={showAddAdmin} onOpenChange={setShowAddAdmin}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2" size="lg">
+                    <Plus className="h-5 w-5" />
+                    Add Admin
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Admin</DialogTitle>
+                    <CardDescription>Create a new admin account with full access</CardDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddAdmin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-name">Full Name *</Label>
+                      <Input
+                        id="admin-name"
+                        value={newAdmin.full_name}
+                        onChange={(e) => setNewAdmin({ ...newAdmin, full_name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-email">Email *</Label>
+                      <Input
+                        id="admin-email"
+                        type="email"
+                        value={newAdmin.email}
+                        onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-password">Password *</Label>
+                      <Input
+                        id="admin-password"
+                        type="password"
+                        value={newAdmin.password}
+                        onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" size="lg">Add Admin</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardDescription>Currently logged in as: {profile?.full_name}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Only admins can add other admins or students. Students cannot create admin accounts.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
