@@ -17,7 +17,6 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"student" | "admin">("student");
   const [classLevel, setClassLevel] = useState("5");
 
   useEffect(() => {
@@ -29,14 +28,14 @@ const Auth = () => {
   }, []);
 
   const checkProfileAndRedirect = async (userId: string) => {
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: roleData } = await supabase
+      .from("user_roles")
       .select("role")
-      .eq("id", userId)
-      .single();
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    if (profile) {
-      navigate(profile.role === "admin" ? "/admin" : "/student");
+    if (roleData) {
+      navigate(roleData.role === "admin" ? "/admin" : "/student");
     }
   };
 
@@ -51,8 +50,8 @@ const Auth = () => {
         options: {
           data: {
             full_name: fullName,
-            role: role,
-            class_level: role === "student" ? parseInt(classLevel) : null,
+            role: "student", // Only students can self-register
+            class_level: parseInt(classLevel),
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -205,34 +204,20 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">I am a</Label>
-                  <Select value={role} onValueChange={(value: "student" | "admin") => setRole(value)}>
-                    <SelectTrigger id="role">
+                  <Label htmlFor="class">Class (1-10)</Label>
+                  <Select value={classLevel} onValueChange={setClassLevel}>
+                    <SelectTrigger id="class">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      {[...Array(10)].map((_, i) => (
+                        <SelectItem key={i + 1} value={String(i + 1)}>
+                          Class {i + 1}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                {role === "student" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="class">Class (1-10)</Label>
-                    <Select value={classLevel} onValueChange={setClassLevel}>
-                      <SelectTrigger id="class">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[...Array(10)].map((_, i) => (
-                          <SelectItem key={i + 1} value={String(i + 1)}>
-                            Class {i + 1}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
                     <>

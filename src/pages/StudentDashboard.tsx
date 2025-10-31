@@ -40,7 +40,15 @@ const StudentDashboard = () => {
       .eq("id", session.user.id)
       .single();
 
-    if (!profileData || profileData.role !== "student") {
+    // Check role from user_roles table (secure)
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "student")
+      .maybeSingle();
+
+    if (!profileData || !roleData) {
       navigate("/");
       return;
     }

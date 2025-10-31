@@ -26,6 +26,12 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddBook, setShowAddBook] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showIssueBook, setShowIssueBook] = useState(false);
+  const [issueForm, setIssueForm] = useState({
+    student_id: "",
+    book_id: "",
+    due_days: "14",
+  });
   
   const [newBook, setNewBook] = useState({
     title: "",
@@ -64,7 +70,15 @@ const AdminDashboard = () => {
       .eq("id", session.user.id)
       .single();
 
-    if (!profileData || profileData.role !== "admin") {
+    // Check role from user_roles table (secure)
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!profileData || !roleData) {
       navigate("/");
       return;
     }
@@ -161,6 +175,43 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleIssueBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + parseInt(issueForm.due_days));
+
+    const { error } = await supabase.from("issued_books").insert({
+      book_id: issueForm.book_id,
+      student_id: issueForm.student_id,
+      due_date: dueDate.toISOString(),
+      issued_by_admin_id: user.id,
+    });
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error issuing book", description: error.message });
+    } else {
+      toast({ title: "Book issued successfully!" });
+      setShowIssueBook(false);
+      setIssueForm({ student_id: "", book_id: "", due_days: "14" });
+      fetchData();
+    }
+  };
+
+  const handleRemoveBook = async (bookId: string) => {
+    const { error } = await supabase
+      .from("books")
+      .update({ is_deleted: true })
+      .eq("id", bookId);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Error removing book" });
+    } else {
+      toast({ title: "Book removed successfully!" });
+      fetchData();
+    }
+  };
+
   const handleReturnBook = async (issuedBookId: string) => {
     const { error } = await supabase
       .from("issued_books")
@@ -235,10 +286,11 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="books" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="books">Books</TabsTrigger>
-            <TabsTrigger value="issued">Issued Books</TabsTrigger>
-            <TabsTrigger value="students">Students</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="books">📚 Books</TabsTrigger>
+            <TabsTrigger value="issue">📤 Issue Book</TabsTrigger>
+            <TabsTrigger value="issued">📋 Issued Books</TabsTrigger>
+            <TabsTrigger value="students">👥 Students</TabsTrigger>
           </TabsList>
 
           <TabsContent value="books" className="space-y-6">
@@ -324,9 +376,79 @@ const AdminDashboard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {books.map((book) => (
-                <BookCard key={book.id} book={book} />
+                <div key={book.id} className="relative">
+                  <BookCard book={book} />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => handleRemoveBook(book.id)}
+                  >
+                    Remove
+                  </Button>
+                </div>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="issue" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Issue a Book to Student</CardTitle>
+                <CardDescription>Select a student and book to issue</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleIssueBook} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="student">Select Student *</Label>
+                    <select
+                      id="student"
+                      value={issueForm.student_id}
+                      onChange={(e) => setIssueForm({ ...issueForm, student_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                      required
+                    >
+                      <option value="">Choose a student...</option>
+                      {students.map((student) => (
+                        <option key={student.id} value={student.id}>
+                          {student.full_name} - Class {student.class_level}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="book">Select Book *</Label>
+                    <select
+                      id="book"
+                      value={issueForm.book_id}
+                      onChange={(e) => setIssueForm({ ...issueForm, book_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                      required
+                    >
+                      <option value="">Choose a book...</option>
+                      {books.filter(b => b.available_copies > 0).map((book) => (
+                        <option key={book.id} value={book.id}>
+                          {book.title} by {book.author} ({book.available_copies} available)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="due-days">Due in (days) *</Label>
+                    <Input
+                      id="due-days"
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={issueForm.due_days}
+                      onChange={(e) => setIssueForm({ ...issueForm, due_days: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full">Issue Book</Button>
+                </form>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="issued" className="space-y-6">

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
 
 interface NavigationProps {
   user?: any;
@@ -12,6 +13,21 @@ interface NavigationProps {
 export const Navigation = ({ user, profile }: NavigationProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [userRole, setUserRole] = useState<string>("");
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setUserRole(data?.role || "");
+      }
+    };
+    fetchRole();
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -35,7 +51,7 @@ export const Navigation = ({ user, profile }: NavigationProps) => {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <Link to={profile?.role === "admin" ? "/admin" : "/student"}>
+                <Link to={userRole === "admin" ? "/admin" : "/student"}>
                   <Button variant="ghost" className="gap-2">
                     <User className="h-4 w-4" />
                     {profile?.full_name || "Dashboard"}

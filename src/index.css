@@ -49,6 +49,11 @@ All colors MUST be HSL.
     --shadow-large: 0 12px 32px hsla(220, 90%, 56%, 0.2);
 
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Child-friendly enhancements */
+    --button-large-height: 3.5rem;
+    --button-large-font: 1.125rem;
+    --icon-large: 1.5rem;
   }
 
   .dark {
