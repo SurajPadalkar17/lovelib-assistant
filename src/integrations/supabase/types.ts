@@ -23,6 +23,7 @@ export type Database = {
           created_at: string | null
           ebook_url: string | null
           id: string
+          is_deleted: boolean | null
           price: number | null
           summary: string | null
           title: string
@@ -37,6 +38,7 @@ export type Database = {
           created_at?: string | null
           ebook_url?: string | null
           id?: string
+          is_deleted?: boolean | null
           price?: number | null
           summary?: string | null
           title: string
@@ -51,6 +53,7 @@ export type Database = {
           created_at?: string | null
           ebook_url?: string | null
           id?: string
+          is_deleted?: boolean | null
           price?: number | null
           summary?: string | null
           title?: string
@@ -63,8 +66,10 @@ export type Database = {
         Row: {
           book_id: string
           due_date: string
+          fine_amount: number | null
           id: string
           issued_at: string | null
+          issued_by_admin_id: string | null
           returned_at: string | null
           status: string
           student_id: string
@@ -72,8 +77,10 @@ export type Database = {
         Insert: {
           book_id: string
           due_date: string
+          fine_amount?: number | null
           id?: string
           issued_at?: string | null
+          issued_by_admin_id?: string | null
           returned_at?: string | null
           status?: string
           student_id: string
@@ -81,8 +88,10 @@ export type Database = {
         Update: {
           book_id?: string
           due_date?: string
+          fine_amount?: number | null
           id?: string
           issued_at?: string | null
+          issued_by_admin_id?: string | null
           returned_at?: string | null
           status?: string
           student_id?: string
@@ -128,12 +137,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       user_role: "admin" | "student"
